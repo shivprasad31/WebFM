@@ -1,11 +1,698 @@
+{% load static %}
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Document</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>WebFM</title>
+  <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Rajdhani:wght@300;400;600;700&family=Orbitron:wght@400;700;900&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #0d0d0f;
+      --surface: #141418;
+      --surface2: #1c1c22;
+      --border: #2a2a35;
+      --border2: #3a3a48;
+      --accent: #f5a623;
+      --accent2: #e8891a;
+      --red: #e84040;
+      --green: #3de88a;
+      --cyan: #3dd4e8;
+      --text: #e8e4d8;
+      --muted: #7a7870;
+      --dim: #3a3830;
+      --glow: rgba(245, 166, 35, 0.15);
+      --glow-strong: rgba(245, 166, 35, 0.35);
+    }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Rajdhani', sans-serif;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 32px 16px 64px;
+      background-image:
+        radial-gradient(ellipse 80% 50% at 50% -20%, rgba(245,166,35,0.06) 0%, transparent 70%),
+        repeating-linear-gradient(0deg, transparent, transparent 39px, rgba(255,255,255,0.015) 39px, rgba(255,255,255,0.015) 40px),
+        repeating-linear-gradient(90deg, transparent, transparent 39px, rgba(255,255,255,0.015) 39px, rgba(255,255,255,0.015) 40px);
+    }
+
+    /* ── Header ───────────────────────────────── */
+    .header {
+      width: 100%;
+      max-width: 900px;
+      display: flex;
+      align-items: baseline;
+      gap: 16px;
+      margin-bottom: 40px;
+      padding-bottom: 20px;
+      border-bottom: 1px solid var(--border);
+    }
+    .logo {
+      font-family: 'Orbitron', monospace;
+      font-size: 28px;
+      font-weight: 900;
+      letter-spacing: 4px;
+      color: var(--accent);
+      text-shadow: 0 0 30px var(--glow-strong), 0 0 60px rgba(245,166,35,0.1);
+    }
+    .logo span { color: var(--text); opacity: 0.4; }
+    .tagline {
+      font-family: 'Share Tech Mono', monospace;
+      font-size: 11px;
+      color: var(--muted);
+      letter-spacing: 2px;
+      text-transform: uppercase;
+    }
+    .header-right {
+      margin-left: auto;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .live-dot {
+      width: 7px; height: 7px;
+      border-radius: 50%;
+      background: var(--red);
+      box-shadow: 0 0 8px var(--red);
+      animation: pulse 1.8s ease-in-out infinite;
+    }
+    .live-dot.active { background: var(--green); box-shadow: 0 0 8px var(--green); }
+    @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.3} }
+    .live-label {
+      font-family: 'Share Tech Mono', monospace;
+      font-size: 11px;
+      color: var(--muted);
+      letter-spacing: 2px;
+    }
+
+    /* ── Now Playing ──────────────────────────── */
+    .now-playing-wrap {
+      width: 100%;
+      max-width: 900px;
+      margin-bottom: 32px;
+    }
+    .now-playing {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 24px 28px;
+      display: flex;
+      align-items: center;
+      gap: 24px;
+      position: relative;
+      overflow: hidden;
+    }
+    .now-playing::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(135deg, var(--glow) 0%, transparent 60%);
+      opacity: 0;
+      transition: opacity 0.4s;
+      pointer-events: none;
+    }
+    .now-playing.active::before { opacity: 1; }
+
+    .station-logo-big {
+      width: 72px; height: 72px;
+      border-radius: 10px;
+      background: var(--surface2);
+      border: 1px solid var(--border2);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: 'Orbitron', monospace;
+      font-size: 18px;
+      font-weight: 700;
+      color: var(--accent);
+      flex-shrink: 0;
+      overflow: hidden;
+      transition: border-color 0.3s;
+    }
+    .now-playing.active .station-logo-big { border-color: var(--accent); }
+    .station-logo-big img { width: 100%; height: 100%; object-fit: cover; border-radius: 9px; }
+
+    .np-info { flex: 1; min-width: 0; }
+    .np-label {
+      font-family: 'Share Tech Mono', monospace;
+      font-size: 10px;
+      color: var(--muted);
+      letter-spacing: 3px;
+      text-transform: uppercase;
+      margin-bottom: 6px;
+    }
+    .np-name {
+      font-family: 'Orbitron', monospace;
+      font-size: 22px;
+      font-weight: 700;
+      color: var(--text);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      margin-bottom: 4px;
+    }
+    .np-freq {
+      font-family: 'Share Tech Mono', monospace;
+      font-size: 13px;
+      color: var(--accent);
+      letter-spacing: 1px;
+    }
+
+    /* Frequency display */
+    .freq-display {
+      font-family: 'Share Tech Mono', monospace;
+      font-size: 36px;
+      font-weight: 400;
+      color: var(--accent);
+      text-shadow: 0 0 20px var(--glow-strong);
+      letter-spacing: 2px;
+      text-align: right;
+      min-width: 160px;
+    }
+    .freq-unit { font-size: 14px; color: var(--muted); margin-left: 4px; }
+
+    /* Controls */
+    .controls {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      flex-shrink: 0;
+    }
+    .btn-play {
+      width: 52px; height: 52px;
+      border-radius: 50%;
+      border: 2px solid var(--accent);
+      background: transparent;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.2s;
+      box-shadow: 0 0 0 rgba(245,166,35,0);
+      flex-shrink: 0;
+    }
+    .btn-play:hover {
+      background: var(--glow);
+      box-shadow: 0 0 20px var(--glow-strong);
+    }
+    .btn-play svg { width: 20px; height: 20px; fill: var(--accent); }
+
+    /* Volume */
+    .vol-wrap {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 4px;
+      min-width: 80px;
+    }
+    .vol-label {
+      font-family: 'Share Tech Mono', monospace;
+      font-size: 9px;
+      color: var(--muted);
+      letter-spacing: 2px;
+    }
+    input[type=range] {
+      -webkit-appearance: none;
+      width: 80px;
+      height: 3px;
+      background: var(--border2);
+      border-radius: 2px;
+      outline: none;
+      cursor: pointer;
+    }
+    input[type=range]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      width: 14px; height: 14px;
+      border-radius: 50%;
+      background: var(--accent);
+      box-shadow: 0 0 8px var(--glow-strong);
+    }
+    input[type=range]::-moz-range-thumb {
+      width: 14px; height: 14px;
+      border-radius: 50%;
+      background: var(--accent);
+      border: none;
+    }
+
+    /* VU Meter */
+    .vu-meter {
+      display: flex;
+      align-items: flex-end;
+      gap: 2px;
+      height: 32px;
+      padding: 0 4px;
+    }
+    .vu-bar {
+      width: 4px;
+      border-radius: 2px 2px 0 0;
+      background: var(--dim);
+      transition: height 0.08s ease-out;
+      min-height: 3px;
+    }
+    .vu-bar.lit { background: var(--green); }
+    .vu-bar.mid { background: var(--accent); }
+    .vu-bar.high { background: var(--red); }
+
+    /* ── Stations Grid ────────────────────────── */
+    .stations-section { width: 100%; max-width: 900px; }
+    .section-header {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 16px;
+    }
+    .section-title {
+      font-family: 'Share Tech Mono', monospace;
+      font-size: 11px;
+      color: var(--muted);
+      letter-spacing: 3px;
+      text-transform: uppercase;
+    }
+    .section-line { flex: 1; height: 1px; background: var(--border); }
+
+    .stations-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+      gap: 12px;
+    }
+
+    .station-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 16px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      transition: all 0.2s;
+      position: relative;
+      overflow: hidden;
+      user-select: none;
+    }
+    .station-card::after {
+      content: '';
+      position: absolute;
+      left: 0; top: 0; bottom: 0;
+      width: 3px;
+      background: var(--accent);
+      transform: scaleY(0);
+      transition: transform 0.2s;
+      border-radius: 0 2px 2px 0;
+    }
+    .station-card:hover {
+      border-color: var(--border2);
+      background: var(--surface2);
+      transform: translateY(-1px);
+    }
+    .station-card:hover::after { transform: scaleY(0.4); }
+    .station-card.active {
+      border-color: var(--accent);
+      background: var(--surface2);
+      box-shadow: 0 0 0 1px rgba(245,166,35,0.2), inset 0 0 40px rgba(245,166,35,0.04);
+    }
+    .station-card.active::after { transform: scaleY(1); }
+
+    .card-logo {
+      width: 44px; height: 44px;
+      border-radius: 8px;
+      background: var(--surface2);
+      border: 1px solid var(--border2);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: 'Orbitron', monospace;
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--accent);
+      flex-shrink: 0;
+      overflow: hidden;
+      font-size: 10px;
+    }
+    .station-card.active .card-logo { border-color: var(--accent); }
+    .card-logo img { width: 100%; height: 100%; object-fit: cover; border-radius: 7px; }
+
+    .card-info { flex: 1; min-width: 0; }
+    .card-name {
+      font-family: 'Rajdhani', sans-serif;
+      font-size: 16px;
+      font-weight: 700;
+      color: var(--text);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      letter-spacing: 0.5px;
+    }
+    .station-card.active .card-name { color: var(--accent); }
+    .card-meta {
+      font-family: 'Share Tech Mono', monospace;
+      font-size: 11px;
+      color: var(--muted);
+      margin-top: 2px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .card-badge {
+      font-family: 'Share Tech Mono', monospace;
+      font-size: 9px;
+      letter-spacing: 1px;
+      padding: 3px 7px;
+      border-radius: 20px;
+      text-transform: uppercase;
+      flex-shrink: 0;
+    }
+    .badge-live {
+      color: var(--green);
+      background: rgba(61,232,138,0.1);
+      border: 1px solid rgba(61,232,138,0.25);
+    }
+    .badge-idle {
+      color: var(--muted);
+      background: transparent;
+      border: 1px solid var(--border);
+    }
+
+    /* Loading state */
+    .loading-spin {
+      width: 14px; height: 14px;
+      border: 2px solid var(--border2);
+      border-top-color: var(--accent);
+      border-radius: 50%;
+      animation: spin 0.7s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* Buffering overlay on card */
+    .station-card.buffering .card-badge::after {
+      content: '···';
+      animation: dots 1s steps(3, end) infinite;
+    }
+    @keyframes dots { 0%{content:'·'} 33%{content:'··'} 66%{content:'···'} }
+
+    /* No stations */
+    .empty-state {
+      grid-column: 1/-1;
+      text-align: center;
+      padding: 60px 20px;
+      color: var(--muted);
+      font-family: 'Share Tech Mono', monospace;
+      font-size: 13px;
+      letter-spacing: 2px;
+    }
+    .empty-state .icon { font-size: 40px; margin-bottom: 16px; opacity: 0.3; }
+
+    /* Scan line effect */
+    @keyframes scanline {
+      0% { transform: translateY(-100%); }
+      100% { transform: translateY(100vh); }
+    }
+    .scanline {
+      position: fixed;
+      top: 0; left: 0; right: 0;
+      height: 2px;
+      background: linear-gradient(transparent, rgba(245,166,35,0.03), transparent);
+      pointer-events: none;
+      animation: scanline 8s linear infinite;
+      z-index: 999;
+    }
+
+    /* Error toast */
+    .toast {
+      position: fixed;
+      bottom: 24px; left: 50%;
+      transform: translateX(-50%) translateY(80px);
+      background: var(--surface2);
+      border: 1px solid var(--red);
+      border-radius: 8px;
+      padding: 12px 20px;
+      font-family: 'Share Tech Mono', monospace;
+      font-size: 12px;
+      color: var(--red);
+      letter-spacing: 1px;
+      transition: transform 0.3s;
+      z-index: 1000;
+    }
+    .toast.show { transform: translateX(-50%) translateY(0); }
+
+    @media (max-width: 640px) {
+      .freq-display { display: none; }
+      .now-playing { padding: 16px; gap: 14px; }
+      .logo { font-size: 22px; }
+    }
+  </style>
 </head>
 <body>
-    {{name}}
+<div class="scanline"></div>
+
+<header class="header">
+  <div class="logo">WEB<span>·</span>FM</div>
+  <div class="tagline">Online Radio Player</div>
+  <div class="header-right">
+    <div class="live-dot" id="liveDot"></div>
+    <div class="live-label" id="liveLabel">IDLE</div>
+  </div>
+</header>
+
+<!-- Now Playing -->
+<div class="now-playing-wrap">
+  <div class="now-playing" id="nowPlayingCard">
+    <div class="station-logo-big" id="npLogo">
+      <svg viewBox="0 0 24 24" width="32" height="32" fill="none" stroke="currentColor" stroke-width="1.5" opacity="0.3">
+        <circle cx="12" cy="12" r="3"/><path d="M6.3 6.3a8 8 0 0 0 0 11.4M17.7 6.3a8 8 0 0 1 0 11.4M3.5 3.5a14 14 0 0 0 0 17M20.5 3.5a14 14 0 0 1 0 17"/>
+      </svg>
+    </div>
+    <div class="np-info">
+      <div class="np-label">Now Playing</div>
+      <div class="np-name" id="npName">Select a station</div>
+      <div class="np-freq" id="npFreq">— — — FM</div>
+    </div>
+    <div class="vu-meter" id="vuMeter">
+      {% for i in "12345678" %}
+      <div class="vu-bar"></div>
+      {% endfor %}
+    </div>
+    <div class="freq-display" id="freqDisplay">
+      <span id="freqNum">— —</span>
+      <span class="freq-unit">MHz</span>
+    </div>
+    <div class="controls">
+      <div class="vol-wrap">
+        <div class="vol-label">VOL</div>
+        <input type="range" id="volSlider" min="0" max="100" value="80">
+      </div>
+      <button class="btn-play" id="btnPlay" onclick="togglePlay()">
+        <svg id="playIcon" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- Station List -->
+<div class="stations-section">
+  <div class="section-header">
+    <div class="section-title">Stations</div>
+    <div class="section-line"></div>
+    <div class="section-title" id="stationCount">
+      {{ stations|length }} available
+    </div>
+  </div>
+
+  <div class="stations-grid" id="stationsGrid">
+    {% for station in stations %}
+    <div class="station-card"
+         id="card-{{ station.id }}"
+         data-id="{{ station.id }}"
+         data-url="{{ station.stream_url }}"
+         data-name="{{ station.name }}"
+         data-freq="{{ station.frequency|default:'— FM' }}"
+         data-genre="{{ station.genre|default:'Radio' }}"
+         onclick="selectStation(this)">
+      <div class="card-logo">
+        {% if station.logo %}
+          <img src="{{ station.logo.url }}" alt="{{ station.name }}">
+        {% else %}
+          {{ station.name|slice:":3"|upper }}
+        {% endif %}
+      </div>
+      <div class="card-info">
+        <div class="card-name">{{ station.name }}</div>
+        <div class="card-meta">{{ station.frequency|default:"" }}{% if station.frequency %} · {% endif %}{{ station.genre|default:"FM Radio" }}</div>
+      </div>
+      <div class="card-badge badge-idle" id="badge-{{ station.id }}">FM</div>
+    </div>
+    {% empty %}
+    <div class="empty-state">
+      <div class="icon">📻</div>
+      No stations found. Add some via Django Admin.
+    </div>
+    {% endfor %}
+  </div>
+</div>
+
+<audio id="audioPlayer" preload="none"></audio>
+<div class="toast" id="toast"></div>
+
+<script>
+  const audio = document.getElementById('audioPlayer');
+  const btnPlay = document.getElementById('btnPlay');
+  const playIcon = document.getElementById('playIcon');
+  const npName = document.getElementById('npName');
+  const npFreq = document.getElementById('npFreq');
+  const npLogo = document.getElementById('npLogo');
+  const npCard = document.getElementById('nowPlayingCard');
+  const liveDot = document.getElementById('liveDot');
+  const liveLabel = document.getElementById('liveLabel');
+  const freqNum = document.getElementById('freqNum');
+  const volSlider = document.getElementById('volSlider');
+  const vuMeter = document.getElementById('vuMeter');
+
+  let activeCard = null;
+  let vuInterval = null;
+  let vuCtx = null;
+  let analyser = null;
+  let vuSource = null;
+
+  // Volume
+  audio.volume = volSlider.value / 100;
+  volSlider.addEventListener('input', () => { audio.volume = volSlider.value / 100; });
+
+  const PLAY_SVG = `<path d="M8 5v14l11-7z"/>`;
+  const PAUSE_SVG = `<path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/>`;
+  const LOAD_SVG = `<circle cx="12" cy="12" r="7" stroke="currentColor" stroke-width="2" fill="none" stroke-dasharray="22" stroke-dashoffset="0" style="animation:spin 0.7s linear infinite;transform-origin:center"/>`;
+
+  function selectStation(card) {
+    const url = card.dataset.url;
+    const name = card.dataset.name;
+    const freq = card.dataset.freq;
+    const id = card.dataset.id;
+
+    // Deactivate previous
+    if (activeCard && activeCard !== card) {
+      activeCard.classList.remove('active', 'buffering');
+      const prevBadge = activeCard.querySelector('.card-badge');
+      prevBadge.textContent = 'FM';
+      prevBadge.className = 'card-badge badge-idle';
+    }
+
+    // If same card clicked while playing — just toggle
+    if (activeCard === card && !audio.paused) {
+      togglePlay();
+      return;
+    }
+
+    activeCard = card;
+    card.classList.add('active', 'buffering');
+
+    // Update now playing
+    npName.textContent = name;
+    npFreq.textContent = freq;
+    freqNum.textContent = freq.replace(/[^0-9.]/g, '') || '—';
+    npCard.classList.add('active');
+
+    // Update logo
+    const logoImg = card.querySelector('.card-logo img');
+    npLogo.innerHTML = logoImg
+      ? `<img src="${logoImg.src}" alt="${name}">`
+      : `<span style="font-family:'Orbitron',monospace;font-size:11px;font-weight:700;color:var(--accent)">${name.slice(0,3).toUpperCase()}</span>`;
+
+    // Load and play
+    audio.src = url;
+    audio.load();
+    const playPromise = audio.play();
+
+    setUIState('loading');
+
+    if (playPromise) {
+      playPromise
+        .then(() => { /* playing */ })
+        .catch(err => {
+          showToast('Stream unavailable or blocked');
+          setUIState('stopped');
+          card.classList.remove('active', 'buffering');
+        });
+    }
+  }
+
+  function togglePlay() {
+    if (!activeCard) return;
+    if (audio.paused) {
+      audio.play().catch(() => showToast('Could not resume stream'));
+    } else {
+      audio.pause();
+    }
+  }
+
+  function setUIState(state) {
+    const badge = activeCard ? activeCard.querySelector('.card-badge') : null;
+    if (state === 'playing') {
+      playIcon.innerHTML = PAUSE_SVG;
+      liveDot.className = 'live-dot active';
+      liveLabel.textContent = 'LIVE';
+      if (badge) { badge.textContent = 'LIVE'; badge.className = 'card-badge badge-live'; }
+      if (activeCard) activeCard.classList.remove('buffering');
+      startVU();
+    } else if (state === 'loading') {
+      playIcon.innerHTML = LOAD_SVG;
+      liveDot.className = 'live-dot';
+      liveLabel.textContent = 'BUFFERING';
+      if (badge) { badge.textContent = '···'; badge.className = 'card-badge badge-live'; }
+    } else {
+      playIcon.innerHTML = PLAY_SVG;
+      liveDot.className = 'live-dot';
+      liveLabel.textContent = 'IDLE';
+      if (badge) { badge.textContent = 'FM'; badge.className = 'card-badge badge-idle'; }
+      if (activeCard) activeCard.classList.remove('buffering');
+      stopVU();
+    }
+  }
+
+  audio.addEventListener('playing', () => setUIState('playing'));
+  audio.addEventListener('waiting', () => setUIState('loading'));
+  audio.addEventListener('pause', () => setUIState('stopped'));
+  audio.addEventListener('error', () => {
+    showToast('Stream error. Check URL or try another station.');
+    setUIState('stopped');
+    if (activeCard) activeCard.classList.remove('active', 'buffering');
+    activeCard = null;
+  });
+
+  // VU Meter (simulated — real Web Audio API often blocked on cross-origin streams)
+  function startVU() {
+    const bars = vuMeter.querySelectorAll('.vu-bar');
+    const NUM = bars.length;
+    stopVU();
+    vuInterval = setInterval(() => {
+      bars.forEach((bar, i) => {
+        const h = Math.random() * 26 + 4;
+        bar.style.height = h + 'px';
+        const pct = h / 30;
+        bar.className = 'vu-bar ' + (pct > 0.85 ? 'high' : pct > 0.55 ? 'mid' : 'lit');
+      });
+    }, 90);
+  }
+
+  function stopVU() {
+    if (vuInterval) clearInterval(vuInterval);
+    vuMeter.querySelectorAll('.vu-bar').forEach(b => {
+      b.style.height = '3px';
+      b.className = 'vu-bar';
+    });
+  }
+
+  // Toast
+  function showToast(msg) {
+    const toast = document.getElementById('toast');
+    toast.textContent = msg;
+    toast.classList.add('show');
+    setTimeout(() => toast.classList.remove('show'), 3500);
+  }
+</script>
 </body>
 </html>
